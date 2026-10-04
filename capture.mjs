@@ -130,6 +130,7 @@ async function capture(job) {
 }
 
 const queue = [...jobs];
+const failedJobs = [];
 // Slow and polite: two workers, a pause between pages, and retries with a growing wait when the site answers 429.
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 await Promise.all(Array.from({ length: 2 }, async () => {
@@ -140,10 +141,25 @@ await Promise.all(Array.from({ length: 2 }, async () => {
       try { await capture(job); lastErr = null; break; }
       catch (e) { lastErr = e; await sleep(/429|503/.test(e.message) ? 20000 * attempt : 5000); }
     }
-    if (lastErr) failures.push(`${job.cc} ${job.dept} ${job.device}: ${lastErr.message}`);
+    if (lastErr) failedJobs.push({ job, msg: lastErr.message });
     await sleep(4000);
   }
 }));
+
+// Second pass: wait a few minutes so the rate limit resets, then try the failed pages one at a time.
+if (failedJobs.length) {
+  console.log(`Retrying ${failedJobs.length} failed pages after a pause.`);
+  await sleep(180000);
+  for (const { job, msg } of failedJobs) {
+    let err = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try { await capture(job); err = null; break; }
+      catch (e) { err = e; await sleep(60000 * attempt); }
+    }
+    if (err) failures.push(`${job.cc} ${job.dept} ${job.device}: ${err.message}`);
+    await sleep(10000);
+  }
+}
 await browser.close();
 
 index = index.filter(r => !(r.date === date && r.time === time && results.some(n => n.cc === r.cc && n.dept === r.dept && n.device === r.device))).concat(results);
