@@ -11,11 +11,15 @@ import path from "node:path";
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const DOCS = path.join(ROOT, "docs");
 const INDEX = path.join(DOCS, "data", "index.json");
-const URLS_CACHE = path.join(ROOT, "urls.json");
 const cfg = JSON.parse(await fs.readFile(path.join(ROOT, "markets.json"), "utf8"));
 const DEPTS = ["women", "men", "kids", "home", "beauty", "sport-women", "sport-men", "sport-kids"];
 const only = process.env.ONLY?.trim() ? process.env.ONLY.split(",").map(s => s.trim()).filter(Boolean) : undefined;
 const discoverOnly = process.argv.includes("--discover");
+// On GitHub Actions each market runs as its own job and writes a partial file; merge.mjs folds them into index.json.
+// Discovered URLs are cached per market so parallel jobs never write the same file.
+const tag = only ? only.join("-") : "all";
+const URLS_CACHE = path.join(DOCS, "data", "urls", `${tag}.json`);
+const PARTIAL = path.join(DOCS, "data", `partial-${tag}.json`);
 
 // Current date and hour in Copenhagen
 const parts = Object.fromEntries(
@@ -30,7 +34,7 @@ if (!time && !discoverOnly) { console.log(`Hour ${hour} Copenhagen is outside th
 
 let index = [];
 try { index = JSON.parse(await fs.readFile(INDEX, "utf8")); } catch {}
-if (!discoverOnly && !process.env.FORCE && index.some(r => r.date === date && r.time === time)) {
+if (!discoverOnly && !process.env.FORCE && index.some(r => r.date === date && r.time === time && (!only || only.includes(r.cc)))) {
   console.log(`Slot ${date} ${time} already captured. Exiting.`); process.exit(0);
 }
 
@@ -104,6 +108,7 @@ for (const m of cfg.markets) {
   m.resolved = depts;
   if (discoverOnly) console.log(m.cc, JSON.stringify(depts, null, 2));
 }
+await fs.mkdir(path.dirname(URLS_CACHE), { recursive: true });
 await fs.writeFile(URLS_CACHE, JSON.stringify(cache, null, 2));
 if (discoverOnly) { await browser.close(); process.exit(0); }
 
@@ -176,18 +181,9 @@ if (failedJobs.length) {
 }
 await browser.close();
 
-index = index.filter(r => !(r.date === date && r.time === time && results.some(n => n.cc === r.cc && n.dept === r.dept && n.device === r.device))).concat(results);
-await fs.mkdir(path.dirname(INDEX), { recursive: true });
-await fs.writeFile(INDEX, JSON.stringify(index));
-
-// Optional retention: RETENTION_DAYS=90 deletes older screenshots to keep the repo small.
-const keep = Number(process.env.RETENTION_DAYS || 0);
-if (keep > 0) {
-  const cutoff = new Date(Date.now() - keep * 864e5).toISOString().slice(0, 10);
-  for (const d of await fs.readdir(path.join(DOCS, "shots")).catch(() => [])) if (d < cutoff) await fs.rm(path.join(DOCS, "shots", d), { recursive: true, force: true });
-  index = index.filter(r => r.date >= cutoff);
-  await fs.writeFile(INDEX, JSON.stringify(index));
-}
+// Results go to a partial file. Run `node merge.mjs` to fold partials into docs/data/index.json.
+await fs.mkdir(path.dirname(PARTIAL), { recursive: true });
+await fs.writeFile(PARTIAL, JSON.stringify(results));
 
 console.log(`Saved ${results.length} of ${jobs.length} screenshots for ${date} ${time}.`);
 if (failures.length) console.log("Problems:\n" + failures.join("\n"));
