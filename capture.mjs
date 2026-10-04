@@ -130,14 +130,18 @@ async function capture(job) {
 }
 
 const queue = [...jobs];
-await Promise.all(Array.from({ length: 4 }, async () => {
+// Slow and polite: two workers, a pause between pages, and retries with a growing wait when the site answers 429.
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+await Promise.all(Array.from({ length: 2 }, async () => {
   while (queue.length) {
     const job = queue.shift();
-    try { await capture(job); }
-    catch (e1) {
-      try { await capture(job); }
-      catch (e2) { failures.push(`${job.cc} ${job.dept} ${job.device}: ${e2.message}`); }
+    let lastErr;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      try { await capture(job); lastErr = null; break; }
+      catch (e) { lastErr = e; await sleep(/429|503/.test(e.message) ? 20000 * attempt : 5000); }
     }
+    if (lastErr) failures.push(`${job.cc} ${job.dept} ${job.device}: ${lastErr.message}`);
+    await sleep(4000);
   }
 }));
 await browser.close();
