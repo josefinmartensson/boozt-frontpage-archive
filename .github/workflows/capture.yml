@@ -2,6 +2,7 @@ name: Capture frontpages
 
 # Copenhagen is UTC+2 in summer and UTC+1 in winter. The job is triggered at both possible UTC times for
 # 08:00 and 16:00. capture.mjs checks the Copenhagen hour and skips a slot that is already saved.
+# Each market runs as its own job (about 10 minutes), then one job merges everything and commits once.
 on:
   schedule:
     - cron: "5 6,7 * * *"
@@ -20,9 +21,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  capture:
+  markets:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    outputs:
+      list: ${{ steps.pick.outputs.list }}
+    steps:
+      - id: pick
+        env:
+          ONLY: ${{ github.event.inputs.only }}
+        run: |
+          ALL='["se","dk","no","fi","de","nl","at","fr","pl","ch","lt","lv","ee","is","fo"]'
+          if [ -z "$ONLY" ]; then echo "list=$ALL" >> $GITHUB_OUTPUT
+          else echo "list=$(echo "$ONLY" | tr -d ' ' | awk -F, '{printf "["; for(i=1;i<=NF;i++){printf "%s\"%s\"", (i>1?",":""), $i}; printf "]"}')" >> $GITHUB_OUTPUT; fi
+
+  capture:
+    needs: markets
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        cc: ${{ fromJson(needs.markets.outputs.list) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,15 +50,42 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npx playwright install --with-deps chromium
-      - name: Capture
+      - name: Capture ${{ matrix.cc }}
         env:
           FORCE: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
-          ONLY: ${{ github.event.inputs.only }}
-          RETENTION_DAYS: "0"
+          ONLY: ${{ matrix.cc }}
         run: node capture.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shots-${{ matrix.cc }}
+          path: |
+            docs/shots
+            docs/data/partial-*.json
+            docs/data/urls/*.json
+          if-no-files-found: ignore
+          retention-days: 3
+
+  merge:
+    needs: capture
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shots-*
+          path: docs
+          merge-multiple: true
+      - name: Merge
+        env:
+          RETENTION_DAYS: "0"
+        run: node merge.mjs
       - name: Commit
         run: |
           git config user.name "frontpage-archive"
           git config user.email "frontpage-archive@users.noreply.github.com"
-          git add docs urls.json
+          git add docs
           git diff --cached --quiet || (git commit -m "Frontpage snapshots $(date -u +%F\ %H:%M)" && git pull --rebase && git push)
