@@ -1,1 +1,39 @@
-{}
+{
+  "dk": {
+    "women": "https://www.boozt.com/dk/da/toej-til-kvinder",
+    "men": "https://www.boozt.com/dk/da/toej-til-maend",
+    "kids": "https://www.boozt.com/dk/da/born",
+    "home": "https://www.boozt.com/dk/da/indretning",
+    "beauty": "https://www.boozt.com/dk/da/beauty",
+    "sport-women": "https://www.boozt.com/dk/da/toej-til-kvinder/sport/vis-alt",
+    "sport-men": "https://www.boozt.com/dk/da/maend/sport/se-alt",
+    "sport-kids": "https://www.boozt.com/dk/da/born/sport/se-alt"
+  },
+  "no": {},
+  "fi": {},
+  "de": {},
+  "nl": {},
+  "at": {},
+  "fr": {
+    "women": "https://www.boozt.com/fr/fr/femme",
+    "men": "https://www.boozt.com/fr/fr/homme",
+    "kids": "https://www.boozt.com/fr/fr/enfants",
+    "home": "https://www.boozt.com/fr/fr/brands-a-z",
+    "beauty": "https://www.boozt.com/fr/fr/interieur",
+    "sport-men": "https://www.boozt.com/fr/fr/femmes/sport/voir-tout",
+    "sport-kids": "https://www.boozt.com/fr/fr/enfants/sport/voir-tout"
+  },
+  "pl": {},
+  "ch": {},
+  "lt": {},
+  "lv": {
+    "women": "https://www.boozt.com/lv/lv/sievietem",
+    "men": "https://www.boozt.com/lv/lv/viriesiem",
+    "kids": "https://www.boozt.com/lv/lv/berniem",
+    "home": "https://www.boozt.com/lv/lv/majai",
+    "beauty": "https://www.boozt.com/lv/lv/skaistumkopsanas-produkti"
+  },
+  "ee": {},
+  "is": {},
+  "fo": {}
+}
