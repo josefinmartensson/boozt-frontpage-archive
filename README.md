@@ -19,6 +19,10 @@ Takes screenshots of Boozt department frontpages (women, men, kids, home, sport,
 - `node capture.mjs --discover` prints what it finds without taking screenshots.
 - Sport is split into `sport-women`, `sport-men` and `sport-kids`. Sweden is pinned. Other markets are discovered by looking for links containing `/sport` in the navigation, so check them after the first run.
 
+## How a run works
+
+Each market is its own job in GitHub Actions (about 10 minutes, five at a time). Every job writes its screenshots and a `partial-<cc>.json`, then one merge job folds the partials into `docs/data/index.json` with `merge.mjs` and commits once. A market that fails does not stop the others. Discovered URLs are cached in `docs/data/urls/<cc>.json`; delete a file there to force a fresh discovery.
+
 ## Size
 
 One run is up to 240 screenshots. At about 100 to 150 KB each that is roughly 20 to 30 MB per run, or 40 to 60 MB per day. A repo grows past GitHub's recommended size within a few months. Set `RETENTION_DAYS` in `.github/workflows/capture.yml` (for example 90), or move `docs/shots` to a storage bucket.
