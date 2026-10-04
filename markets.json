@@ -1,5 +1,5 @@
 {
-  "_note": "home = market start page. Language codes other than se/sv are best guesses: check them and fix if a market fails. Add 'depts' to pin exact URLs for a market (women, men, kids, home, beauty, sport-women, sport-men, sport-kids). Anything missing is discovered from the navigation and cached in urls.json.",
+  "_note": "home = market start page. Pinned URLs under 'depts' win over discovery. Use false for a department a market does not have (for example beauty in Germany). Anything missing is discovered from the navigation and cached in urls.json. Delete urls.json to force a fresh discovery.",
   "markets": [
     {
       "cc": "se",
@@ -15,19 +15,91 @@
         "sport-kids": "https://www.boozt.com/se/sv/barn/sport/se-allt"
       }
     },
-    { "cc": "dk", "home": "https://www.boozt.com/dk/da" },
-    { "cc": "no", "home": "https://www.boozt.com/no/no" },
-    { "cc": "fi", "home": "https://www.boozt.com/fi/fi" },
-    { "cc": "de", "home": "https://www.boozt.com/de/de" },
-    { "cc": "nl", "home": "https://www.boozt.com/nl/nl" },
-    { "cc": "at", "home": "https://www.boozt.com/at/de" },
-    { "cc": "fr", "home": "https://www.boozt.com/fr/fr" },
-    { "cc": "pl", "home": "https://www.boozt.com/pl/pl" },
-    { "cc": "ch", "home": "https://www.boozt.com/ch/de" },
-    { "cc": "lt", "home": "https://www.boozt.com/lt/lt" },
-    { "cc": "lv", "home": "https://www.boozt.com/lv/lv" },
-    { "cc": "ee", "home": "https://www.boozt.com/ee/et" },
-    { "cc": "is", "home": "https://www.boozt.com/is/is" },
-    { "cc": "fo", "home": "https://www.boozt.com/fo/da" }
+    {
+      "cc": "dk",
+      "home": "https://www.boozt.com/dk/da"
+    },
+    {
+      "cc": "no",
+      "home": "https://www.boozt.com/no/no",
+      "depts": {
+        "women": "https://www.boozt.com/no/no/kvinner",
+        "men": "https://www.boozt.com/no/no/menn",
+        "kids": "https://www.boozt.com/no/no/barn",
+        "home": "https://www.boozt.com/no/no/interioer",
+        "beauty": "https://www.boozt.com/no/no/beauty",
+        "sport-women": "https://www.boozt.com/no/no/kvinner/sport",
+        "sport-men": "https://www.boozt.com/no/no/menn/sport",
+        "sport-kids": "https://www.boozt.com/no/no/barn/sport/se-alt"
+      }
+    },
+    {
+      "cc": "fi",
+      "home": "https://www.boozt.com/fi/fi",
+      "depts": {
+        "women": "https://www.boozt.com/fi/fi/naiset",
+        "men": "https://www.boozt.com/fi/fi/miehet",
+        "kids": "https://www.boozt.com/fi/fi/lapset",
+        "home": "https://www.boozt.com/fi/fi/sisustus",
+        "beauty": "https://www.boozt.com/fi/fi/beauty",
+        "sport-women": "https://www.boozt.com/fi/fi/naiset/sport",
+        "sport-men": "https://www.boozt.com/fi/fi/miehet/sport",
+        "sport-kids": "https://www.boozt.com/fi/fi/lapset/sport/nayta-kaikki"
+      }
+    },
+    {
+      "cc": "de",
+      "home": "https://www.boozt.com/de/de",
+      "depts": {
+        "women": "https://www.boozt.com/de/de/damenmode",
+        "men": "https://www.boozt.com/de/de/herrenmode",
+        "kids": "https://www.boozt.com/de/de/kinder",
+        "home": "https://www.boozt.com/de/de/einrichtung",
+        "beauty": false,
+        "sport-women": "https://www.boozt.com/de/de/damenmode/sport",
+        "sport-men": "https://www.boozt.com/de/de/herren/sport",
+        "sport-kids": "https://www.boozt.com/de/de/kinder/sport/alle-ansehen"
+      }
+    },
+    {
+      "cc": "nl",
+      "home": "https://www.boozt.com/nl/nl"
+    },
+    {
+      "cc": "at",
+      "home": "https://www.boozt.com/at/de"
+    },
+    {
+      "cc": "fr",
+      "home": "https://www.boozt.com/fr/fr"
+    },
+    {
+      "cc": "pl",
+      "home": "https://www.boozt.com/pl/pl"
+    },
+    {
+      "cc": "ch",
+      "home": "https://www.boozt.com/ch/de"
+    },
+    {
+      "cc": "lt",
+      "home": "https://www.boozt.com/lt/lt"
+    },
+    {
+      "cc": "lv",
+      "home": "https://www.boozt.com/lv/lv"
+    },
+    {
+      "cc": "ee",
+      "home": "https://www.boozt.com/ee/et"
+    },
+    {
+      "cc": "is",
+      "home": "https://www.boozt.com/is/is"
+    },
+    {
+      "cc": "fo",
+      "home": "https://www.boozt.com/fo/da"
+    }
   ]
 }
