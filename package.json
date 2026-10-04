@@ -1,0 +1,12 @@
+{
+  "name": "boozt-frontpage-archive",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "discover": "node capture.mjs --discover"
+  },
+  "dependencies": {
+    "playwright": "1.48.2"
+  }
+}

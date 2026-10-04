@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frontpage Archive</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f1f4; --surface:#ffffff; --fg:#1d1a22; --muted:#6b6573; --line:#dcd7e0;
+  --accent:#5b2a86; --accent-fg:#ffffff; --chip:#e9e4ee;
+  --display:'Fraunces',Georgia,serif; --body:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#17141b;--surface:#201c27;--fg:#efecf2;--muted:#a29bab;--line:#37313f;--accent:#c9a5ee;--accent-fg:#17141b;--chip:#2c2634;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 var(--body);padding-inline:16px;padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
+h1{font-family:var(--display);font-size:28px;margin:0}
+.sub{color:var(--muted);font:12px var(--mono)}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+button,select,input{font:inherit;color:var(--fg)}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:500}
+.seg button:hover{background:var(--chip)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label.f{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+select,input[type=date]{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:13px var(--mono);text-transform:none;letter-spacing:0}
+.dates{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.dates button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;font:12px var(--mono);cursor:pointer}
+.dates button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}
+.stage{background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;justify-content:center;min-height:320px}
+.shot{max-width:100%;height:auto;border:1px solid var(--line);background:var(--surface);align-self:flex-start}
+.shot.mobile{width:390px;border-radius:18px}
+.shot.desktop{width:100%}
+.meta{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;color:var(--muted);font:12px var(--mono)}
+.meta a{color:var(--accent)}
+.empty{align-self:center;max-width:46ch;display:flex;flex-direction:column;gap:8px}
+.empty h2{font-family:var(--display);font-size:20px;margin:0}
+.empty p{margin:0;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Frontpage Archive</h1><span class="sub" id="count">Loading</span></header>
+  <div class="bar">
+    <div class="seg" id="dept"></div>
+    <div class="seg" id="sub" hidden></div>
+    <label class="f" for="country">Country <select id="country"></select></label>
+    <div class="seg" id="device">
+      <button data-v="desktop" aria-pressed="true">Desktop</button>
+      <button data-v="mobile" aria-pressed="false">Mobile</button>
+    </div>
+    <label class="f" for="pick">Date <input type="date" id="pick"></label>
+  </div>
+  <div class="dates" id="dates"></div>
+  <div class="stage" id="stage"></div>
+  <div class="meta" id="meta"></div>
+</div>
+<script>
+const DEPTS=[["women","Women"],["men","Men"],["kids","Kids"],["home","Home"],["sport","Sport"],["beauty","Beauty"]];
+const SPORT=[["women","Women"],["men","Men"],["kids","Kids"]];
+const dkey=()=>st.dept==="sport"?"sport-"+st.sub:st.dept;
+const COUNTRIES=[["se","Sweden"],["dk","Denmark"],["no","Norway"],["fi","Finland"],["de","Germany"],["nl","Netherlands"],["at","Austria"],["fr","France"],["pl","Poland"],["ch","Switzerland"],["lt","Lithuania"],["lv","Latvia"],["ee","Estonia"],["is","Iceland"],["fo","Faroe Islands"]];
+const st={dept:"women",sub:"women",country:"se",device:"desktop",date:null};
+let rows=[];
+const $=id=>document.getElementById(id);
+const key=r=>r.date+" "+r.time;
+DEPTS.forEach(([k,l])=>{const b=document.createElement("button");b.textContent=l;b.dataset.v=k;b.setAttribute("aria-pressed",k===st.dept);$("dept").append(b)});
+COUNTRIES.forEach(([k,l])=>{const o=document.createElement("option");o.value=k;o.textContent=l+" ("+k.toUpperCase()+")";$("country").append(o)});
+SPORT.forEach(([k,l])=>{const b=document.createElement("button");b.textContent=l;b.dataset.v=k;b.setAttribute("aria-pressed",k===st.sub);$("sub").append(b)});
+$("dept").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.dept=b.dataset.v;st.date=null;sync()};
+$("sub").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.sub=b.dataset.v;st.date=null;sync()};
+$("device").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.device=b.dataset.v;st.date=null;sync()};
+$("country").onchange=e=>{st.country=e.target.value;st.date=null;render()};
+$("pick").onchange=e=>{st.date=e.target.value||null;render()};
+function sync(){
+  [...$("dept").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.dept));
+  [...$("device").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.device));
+  [...$("sub").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.sub));
+  $("sub").hidden=st.dept!=="sport";
+  render();
+}
+function render(){
+  const list=rows.filter(r=>r.dept===dkey()&&r.cc===st.country&&r.device===st.device).sort((a,b)=>key(b).localeCompare(key(a)));
+  let cur=null;
+  if(list.length)cur=st.date?(list.find(r=>key(r)===st.date)||list.find(r=>key(r)<=st.date+" 23:59")||list[list.length-1]):list[0];
+  $("dates").replaceChildren();
+  list.forEach(r=>{const b=document.createElement("button");b.textContent=key(r);b.setAttribute("aria-pressed",r===cur);b.onclick=()=>{st.date=key(r);render()};$("dates").append(b)});
+  if(cur)$("pick").value=cur.date;
+  $("stage").replaceChildren();$("meta").replaceChildren();
+  const dl=DEPTS.find(d=>d[0]===st.dept)[1]+(st.dept==="sport"?" "+SPORT.find(s=>s[0]===st.sub)[1]:""),cl=COUNTRIES.find(c=>c[0]===st.country)[1];
+  if(!cur){
+    const d=document.createElement("div");d.className="empty";
+    const h=document.createElement("h2");h.textContent="No snapshot for "+dl+" in "+cl;
+    const p=document.createElement("p");p.textContent="Nothing captured yet for this view. The next run is at 08:00 or 16:00 Copenhagen time.";
+    d.append(h,p);$("stage").append(d);return;
+  }
+  const img=document.createElement("img");img.className="shot "+st.device;img.loading="lazy";
+  img.alt=dl+" frontpage, "+cl+", "+st.device+", "+key(cur);img.src=cur.file;$("stage").append(img);
+  const l=document.createElement("span");l.textContent="Captured "+key(cur)+" · "+dl+" · "+cl+" · "+st.device;$("meta").append(l);
+  if(cur.source){const a=document.createElement("a");a.href=cur.source;a.target="_blank";a.rel="noopener";a.textContent="Open live page";$("meta").append(a)}
+}
+fetch("data/index.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{rows=j;$("count").textContent=rows.length+" snapshots";render()}).catch(()=>{$("count").textContent="No snapshots yet";render()});
+</script>
+</body>
+</html>

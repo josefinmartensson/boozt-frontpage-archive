@@ -1,0 +1,33 @@
+{
+  "_note": "home = market start page. Language codes other than se/sv are best guesses: check them and fix if a market fails. Add 'depts' to pin exact URLs for a market (women, men, kids, home, beauty, sport-women, sport-men, sport-kids). Anything missing is discovered from the navigation and cached in urls.json.",
+  "markets": [
+    {
+      "cc": "se",
+      "home": "https://www.boozt.com/se/sv",
+      "depts": {
+        "women": "https://www.boozt.com/se/sv/klader-for-kvinnor",
+        "men": "https://www.boozt.com/se/sv/klader-for-man",
+        "kids": "https://www.boozt.com/se/sv/barn",
+        "home": "https://www.boozt.com/se/sv/inredning",
+        "beauty": "https://www.boozt.com/se/sv/beauty",
+        "sport-women": "https://www.boozt.com/se/sv/klader-for-kvinnor/sport",
+        "sport-men": "https://www.boozt.com/se/sv/man/sport",
+        "sport-kids": "https://www.boozt.com/se/sv/barn/sport/se-allt"
+      }
+    },
+    { "cc": "dk", "home": "https://www.boozt.com/dk/da" },
+    { "cc": "no", "home": "https://www.boozt.com/no/no" },
+    { "cc": "fi", "home": "https://www.boozt.com/fi/fi" },
+    { "cc": "de", "home": "https://www.boozt.com/de/de" },
+    { "cc": "nl", "home": "https://www.boozt.com/nl/nl" },
+    { "cc": "at", "home": "https://www.boozt.com/at/de" },
+    { "cc": "fr", "home": "https://www.boozt.com/fr/fr" },
+    { "cc": "pl", "home": "https://www.boozt.com/pl/pl" },
+    { "cc": "ch", "home": "https://www.boozt.com/ch/de" },
+    { "cc": "lt", "home": "https://www.boozt.com/lt/lt" },
+    { "cc": "lv", "home": "https://www.boozt.com/lv/lv" },
+    { "cc": "ee", "home": "https://www.boozt.com/ee/et" },
+    { "cc": "is", "home": "https://www.boozt.com/is/is" },
+    { "cc": "fo", "home": "https://www.boozt.com/fo/da" }
+  ]
+}
