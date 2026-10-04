@@ -14,7 +14,7 @@ const INDEX = path.join(DOCS, "data", "index.json");
 const URLS_CACHE = path.join(ROOT, "urls.json");
 const cfg = JSON.parse(await fs.readFile(path.join(ROOT, "markets.json"), "utf8"));
 const DEPTS = ["women", "men", "kids", "home", "beauty", "sport-women", "sport-men", "sport-kids"];
-const only = process.env.ONLY?.split(",").map(s => s.trim());
+const only = process.env.ONLY?.trim() ? process.env.ONLY.split(",").map(s => s.trim()).filter(Boolean) : undefined;
 const discoverOnly = process.argv.includes("--discover");
 
 // Current date and hour in Copenhagen
