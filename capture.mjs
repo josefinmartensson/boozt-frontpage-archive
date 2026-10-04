@@ -53,13 +53,22 @@ async function discover(m) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
   try {
-    await page.goto(m.home, { waitUntil: "domcontentloaded", timeout: 45000 });
-    await dismissCookies(page);
-    await page.waitForTimeout(2000);
-    const hrefs = await page.evaluate(() => [...document.querySelectorAll("header a[href], nav a[href]")].map(a => a.href));
+    // Load the start page. If the site answers 429 or the menu is missing, wait and try again.
+    let hrefs = [];
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      const resp = await page.goto(m.home, { waitUntil: "domcontentloaded", timeout: 45000 }).catch(() => null);
+      if (resp && resp.status() < 400) {
+        await dismissCookies(page);
+        await page.waitForTimeout(2500);
+        hrefs = await page.evaluate(() => [...document.querySelectorAll("header a[href], nav a[href]")].map(a => a.href));
+        if (hrefs.length > 20) break;
+      }
+      await new Promise(r => setTimeout(r, 30000 * attempt));
+    }
+    if (hrefs.length <= 20) throw new Error("menu not found (page blocked or changed)");
     const base = new URL(page.url());
     const segs = base.pathname.split("/").filter(Boolean); // [cc, lang]
-    const skip = /(customer|kund|service|help|support|kontakt|hilfe|klant|aide|pomoc|favorit|shopcart|my-lists|club)/i;
+    const skip = /(customer|kund|service|help|support|kontakt|hilfe|klant|aide|pomoc|favorit|shopcart|my-lists|club|brands-a-z)/i;
     const top = [];
     for (const h of hrefs) {
       const u = new URL(h, base);
@@ -67,7 +76,9 @@ async function discover(m) {
       if (u.host !== base.host || p[0] !== segs[0] || p[1] !== segs[1] || p.length !== 3 || skip.test(u.pathname)) continue;
       if (!top.includes(u.origin + u.pathname)) top.push(u.origin + u.pathname);
     }
-    const [women, men, kids, beauty, home] = top;
+    // Main menu order is women, men, kids, (beauty), home. Beauty always has the slug "beauty" and is missing in some markets.
+    const beauty = top.find(u => /\/beauty$/.test(u)) || false;
+    const [women, men, kids, home] = top.filter(u => u !== beauty);
     const sportLinks = [...new Set(hrefs.map(h => { const u = new URL(h, base); return u.origin + u.pathname; }))]
       .filter(u => /\/sport(\/|$)/i.test(new URL(u).pathname));
     const under = d => d && sportLinks.find(u => new URL(u).pathname.startsWith(new URL(d).pathname + "/"));
@@ -80,13 +91,15 @@ async function discover(m) {
 
 for (const m of cfg.markets) {
   if (only && !only.includes(m.cc)) continue;
-  let depts = { ...(m.depts || {}), ...(cache[m.cc] || {}) };
-  if (DEPTS.some(d => !depts[d])) {
+  // Pinned URLs in markets.json win over the cache. A value of false means "this market has no such page".
+  let depts = { ...(cache[m.cc] || {}), ...(m.depts || {}) };
+  if (DEPTS.some(d => depts[d] === undefined || depts[d] === null)) {
     try {
       const found = await discover(m);
-      for (const d of DEPTS) depts[d] = depts[d] || found[d];
+      for (const d of DEPTS) if (depts[d] === undefined || depts[d] === null) depts[d] = found[d];
       cache[m.cc] = Object.fromEntries(Object.entries(depts).filter(([, v]) => v));
     } catch (e) { failures.push(`${m.cc} discover: ${e.message}`); }
+    await new Promise(r => setTimeout(r, 10000));
   }
   m.resolved = depts;
   if (discoverOnly) console.log(m.cc, JSON.stringify(depts, null, 2));
@@ -99,6 +112,7 @@ for (const m of cfg.markets) {
   if (only && !only.includes(m.cc)) continue;
   for (const dept of DEPTS) {
     const url = m.resolved?.[dept];
+    if (url === false) continue; // market has no such department
     if (!url) { failures.push(`${m.cc} ${dept}: no URL found`); continue; }
     for (const device of ["desktop", "mobile"]) jobs.push({ cc: m.cc, dept, device, url });
   }
