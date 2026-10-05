@@ -28,9 +28,9 @@ const parts = Object.fromEntries(
 );
 const date = `${parts.year}-${parts.month}-${parts.day}`;
 const hour = Number(parts.hour);
-let time = hour >= 8 && hour < 12 ? "08:00" : hour >= 16 && hour < 20 ? "16:00" : null;
-if (!time && process.env.FORCE) time = hour < 12 ? "08:00" : "16:00";
-if (!time && !discoverOnly) { console.log(`Hour ${hour} Copenhagen is outside the capture window. Exiting.`); process.exit(0); }
+// GitHub often starts scheduled runs late, sometimes by hours, so the slot is simply the nearest one:
+// anything before 12:00 Copenhagen counts as 08:00, anything after as 16:00.
+const time = hour < 12 ? "08:00" : "16:00";
 
 let index = [];
 try { index = JSON.parse(await fs.readFile(INDEX, "utf8")); } catch {}
@@ -126,10 +126,15 @@ for (const m of cfg.markets) {
 const outDir = path.join(DOCS, "shots", date, time.replace(":", ""));
 await fs.mkdir(outDir, { recursive: true });
 
+// Image quality. QUALITY is JPEG quality 1-100 (default 85). SCALE is desktop sharpness: 1 = normal, 2 = retina
+// (about four times the file size). Mobile already uses the phone's own 3x scale.
+const QUALITY = Number(process.env.QUALITY || 85);
+const SCALE = Number(process.env.SCALE || 1);
+
 async function capture(job) {
   const opts = job.device === "mobile"
     ? { ...devices["iPhone 13"] }
-    : { viewport: { width: 1440, height: 900 } };
+    : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: SCALE };
   const ctx = await browser.newContext({ ...opts, locale: "en-GB" });
   const page = await ctx.newPage();
   try {
@@ -143,7 +148,7 @@ async function capture(job) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(800);
     const file = `${job.cc}-${job.dept}-${job.device}.jpg`;
-    await page.screenshot({ path: path.join(outDir, file), type: "jpeg", quality: 65 });
+    await page.screenshot({ path: path.join(outDir, file), type: "jpeg", quality: QUALITY });
     results.push({ date, time, cc: job.cc, dept: job.dept, device: job.device, file: `shots/${date}/${time.replace(":", "")}/${file}`, source: page.url() });
   } finally { await ctx.close(); }
 }
