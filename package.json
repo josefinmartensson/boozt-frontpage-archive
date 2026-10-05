@@ -1,12 +1,18 @@
+
+100%
 {
   "name": "boozt-frontpage-archive",
   "private": true,
   "type": "module",
   "scripts": {
     "capture": "node capture.mjs",
+    "emails": "node emails.mjs",
+    "merge": "node merge.mjs",
     "discover": "node capture.mjs --discover"
   },
   "dependencies": {
+    "imapflow": "2.2.5",
+    "mailparser": "3.9.35",
     "playwright": "1.48.2"
   }
 }
