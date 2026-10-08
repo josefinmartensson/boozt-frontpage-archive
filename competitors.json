@@ -1,0 +1,33 @@
+{
+  "_note": "Competitors per market. name is shown in the viewer, url is the page to capture. Markets not listed get no competitor screenshots. The sites below are a starting point: check each URL and replace with the ones you follow. Sites with strong bot protection may fail; the run log says which.",
+  "se": [
+    { "name": "Zalando", "url": "https://www.zalando.se/" },
+    { "name": "About You", "url": "https://www.aboutyou.se/" },
+    { "name": "H&M", "url": "https://www2.hm.com/sv_se/index.html" },
+    { "name": "Nelly", "url": "https://nelly.com/se/" },
+    { "name": "Ellos", "url": "https://www.ellos.se/" }
+  ],
+  "dk": [
+    { "name": "Zalando", "url": "https://www.zalando.dk/" },
+    { "name": "About You", "url": "https://www.aboutyou.dk/" },
+    { "name": "H&M", "url": "https://www2.hm.com/da_dk/index.html" },
+    { "name": "Magasin", "url": "https://www.magasin.dk/" }
+  ],
+  "no": [
+    { "name": "Zalando", "url": "https://www.zalando.no/" },
+    { "name": "About You", "url": "https://www.aboutyou.no/" },
+    { "name": "H&M", "url": "https://www2.hm.com/no_no/index.html" },
+    { "name": "Nelly", "url": "https://nelly.com/no/" }
+  ],
+  "fi": [
+    { "name": "Zalando", "url": "https://www.zalando.fi/" },
+    { "name": "About You", "url": "https://www.aboutyou.fi/" },
+    { "name": "H&M", "url": "https://www2.hm.com/fi_fi/index.html" }
+  ],
+  "de": [
+    { "name": "Zalando", "url": "https://www.zalando.de/" },
+    { "name": "About You", "url": "https://www.aboutyou.de/" },
+    { "name": "H&M", "url": "https://www2.hm.com/de_de/index.html" },
+    { "name": "Breuninger", "url": "https://www.breuninger.com/de/" }
+  ]
+}
