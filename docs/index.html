@@ -40,6 +40,7 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
 .empty{align-self:center;max-width:46ch;display:flex;flex-direction:column;gap:8px}
 .empty h2{font-family:var(--display);font-size:20px;margin:0}
 .empty p{margin:0;color:var(--muted)}
+.lock[hidden]{display:none}
 .lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
 .lock form{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
 .lock h2{font-family:var(--display);font-size:22px;margin:0}
@@ -51,7 +52,7 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
 // Access lock. AUTH_HASH is a SHA-256 fingerprint of "username:password", made with setup-password.html.
 // Leave it empty to turn the lock off. This stops casual visitors; the files are still in the public repo.
 const AUTH_HASH = "8599ae4b4e547cb72f8fb26bb81dbea9a2e41d5e32348116739cf57b5b68970b";
-(async () => {
+window.addEventListener("DOMContentLoaded", async () => {
   if (!AUTH_HASH) return;
   const sha = async s => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, "0")).join("");
   let ok = false; try { ok = localStorage.getItem("fa-auth") === AUTH_HASH; } catch {}
@@ -64,7 +65,7 @@ const AUTH_HASH = "8599ae4b4e547cb72f8fb26bb81dbea9a2e41d5e32348116739cf57b5b689
     if (h === AUTH_HASH) { try { localStorage.setItem("fa-auth", h); } catch {} lock.remove(); }
     else document.getElementById("lockerr").textContent = "Wrong username or password.";
   });
-})();
+});
 </script>
 </head>
 <body>
