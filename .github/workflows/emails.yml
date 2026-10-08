@@ -1,0 +1,44 @@
+name: Capture emails
+
+# Reads new Boozt newsletters from the dedicated Gmail inbox (emails.mjs) once an hour,
+# saves each one as an image under docs/emails/ and adds it to docs/data/index.json.
+# Needs the repo secrets GMAIL_USER and GMAIL_APP_PASSWORD.
+on:
+  schedule:
+    - cron: "20 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Same group as "Capture frontpages" so the two never push to index.json at the same time.
+concurrency:
+  group: capture
+  cancel-in-progress: false
+
+jobs:
+  emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Read newsletters
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: node emails.mjs
+      - name: Merge
+        env:
+          RETENTION_DAYS: "0"
+        run: node merge.mjs
+      - name: Commit
+        run: |
+          git config user.name "frontpage-archive"
+          git config user.email "frontpage-archive@users.noreply.github.com"
+          git add docs
+          git diff --cached --quiet || (git commit -m "Newsletters $(date -u +%F\ %H:%M)" && git pull --rebase && git push)
