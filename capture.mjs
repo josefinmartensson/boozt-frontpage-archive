@@ -12,6 +12,8 @@ const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const DOCS = path.join(ROOT, "docs");
 const INDEX = path.join(DOCS, "data", "index.json");
 const cfg = JSON.parse(await fs.readFile(path.join(ROOT, "markets.json"), "utf8"));
+let competitors = {};
+try { competitors = JSON.parse(await fs.readFile(path.join(ROOT, "competitors.json"), "utf8")); } catch {}
 const DEPTS = ["women", "men", "kids", "home", "beauty", "sport-women", "sport-men", "sport-kids"];
 const only = process.env.ONLY?.trim() ? process.env.ONLY.split(",").map(s => s.trim()).filter(Boolean) : undefined;
 const discoverOnly = process.argv.includes("--discover");
@@ -45,7 +47,7 @@ const browser = await chromium.launch();
 const results = [], failures = [];
 
 async function dismissCookies(page) {
-  for (const sel of ["#didomi-notice-agree-button", "button:has-text('Accept')", "button:has-text('Acceptera')", "button:has-text('Accepter')", "button:has-text('Alle akzeptieren')"]) {
+  for (const sel of ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler", "#uc-btn-accept-banner", "button:has-text('Accept all')", "button:has-text('Accept')", "button:has-text('Acceptera')", "button:has-text('Godkänn')", "button:has-text('Accepter')", "button:has-text('Alle akzeptieren')", "button:has-text('Hyväksy')", "button:has-text('Godta')"]) {
     try { await page.locator(sel).first().click({ timeout: 1500 }); return; } catch {}
   }
 }
@@ -121,6 +123,12 @@ for (const m of cfg.markets) {
     if (!url) { failures.push(`${m.cc} ${dept}: no URL found`); continue; }
     for (const device of ["desktop", "mobile"]) jobs.push({ cc: m.cc, dept, device, url });
   }
+  // Competitors for this market, from competitors.json
+  for (const c of (Array.isArray(competitors[m.cc]) ? competitors[m.cc] : [])) {
+    if (!c?.url || !c?.name) continue;
+    const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    jobs.push({ cc: m.cc, dept: "competitor", name: c.name, slug, device: "mobile", url: c.url }); // mobile only, so all competitors fit side by side
+  }
 }
 
 const outDir = path.join(DOCS, "shots", date, time.replace(":", ""));
@@ -147,9 +155,11 @@ async function capture(job) {
     for (let y = 0; y < h; y += 600) { await page.evaluate(v => window.scrollTo(0, v), y); await page.waitForTimeout(250); }
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(800);
-    const file = `${job.cc}-${job.dept}-${job.device}.jpg`;
+    const file = job.slug ? `${job.cc}-comp-${job.slug}-${job.device}.jpg` : `${job.cc}-${job.dept}-${job.device}.jpg`;
     await page.screenshot({ path: path.join(outDir, file), type: "jpeg", quality: QUALITY });
-    results.push({ date, time, cc: job.cc, dept: job.dept, device: job.device, file: `shots/${date}/${time.replace(":", "")}/${file}`, source: page.url() });
+    const row = { date, time, cc: job.cc, dept: job.dept, device: job.device, file: `shots/${date}/${time.replace(":", "")}/${file}`, source: page.url() };
+    if (job.name) row.name = job.name;
+    results.push(row);
   } finally { await ctx.close(); }
 }
 
@@ -180,7 +190,7 @@ if (failedJobs.length) {
       try { await capture(job); err = null; break; }
       catch (e) { err = e; await sleep(60000 * attempt); }
     }
-    if (err) failures.push(`${job.cc} ${job.dept} ${job.device}: ${err.message}`);
+    if (err) failures.push(`${job.cc} ${job.name || job.dept} ${job.device}: ${err.message}`);
     await sleep(10000);
   }
 }
