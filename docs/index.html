@@ -50,7 +50,7 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
 <script>
 // Access lock. AUTH_HASH is a SHA-256 fingerprint of "username:password", made with setup-password.html.
 // Leave it empty to turn the lock off. This stops casual visitors; the files are still in the public repo.
-const AUTH_HASH = "a1d666c8341f26389bbcd12f3a4c7932fa6e1831ed43363f17b2a05a30c4ec0c";
+const AUTH_HASH = "8599ae4b4e547cb72f8fb26bb81dbea9a2e41d5e32348116739cf57b5b68970b";
 (async () => {
   if (!AUTH_HASH) return;
   const sha = async s => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, "0")).join("");
