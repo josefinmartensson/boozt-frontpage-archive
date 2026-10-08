@@ -34,14 +34,49 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
 .shot{max-width:100%;height:auto;border:1px solid var(--line);background:var(--surface);align-self:flex-start}
 .shot.mobile{width:390px;border-radius:18px}
 .shot.desktop{width:100%}
+.shot.email{width:700px}
 .meta{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;color:var(--muted);font:12px var(--mono)}
 .meta a{color:var(--accent)}
 .empty{align-self:center;max-width:46ch;display:flex;flex-direction:column;gap:8px}
 .empty h2{font-family:var(--display);font-size:20px;margin:0}
 .empty p{margin:0;color:var(--muted)}
+.lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.lock form{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+.lock h2{font-family:var(--display);font-size:22px;margin:0}
+.lock input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:14px var(--body)}
+.lock button{background:var(--accent);color:var(--accent-fg);border:0;border-radius:6px;padding:10px;font-weight:500;cursor:pointer}
+.lock .err{color:#b3261e;font-size:13px;min-height:1.2em;margin:0}
 </style>
+<script>
+// Access lock. AUTH_HASH is a SHA-256 fingerprint of "username:password", made with setup-password.html.
+// Leave it empty to turn the lock off. This stops casual visitors; the files are still in the public repo.
+const AUTH_HASH = "";
+(async () => {
+  if (!AUTH_HASH) return;
+  const sha = async s => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, "0")).join("");
+  let ok = false; try { ok = localStorage.getItem("fa-auth") === AUTH_HASH; } catch {}
+  const lock = document.getElementById("lock");
+  if (ok) { lock.remove(); return; }
+  lock.hidden = false;
+  document.getElementById("lockform").addEventListener("submit", async e => {
+    e.preventDefault();
+    const h = await sha(document.getElementById("u").value.trim().toLowerCase() + ":" + document.getElementById("p").value);
+    if (h === AUTH_HASH) { try { localStorage.setItem("fa-auth", h); } catch {} lock.remove(); }
+    else document.getElementById("lockerr").textContent = "Wrong username or password.";
+  });
+})();
+</script>
 </head>
 <body>
+<div class="lock" id="lock" hidden>
+  <form id="lockform" autocomplete="on">
+    <h2>Frontpage Archive</h2>
+    <label class="f" for="u">Username</label><input id="u" name="username" autocomplete="username" required>
+    <label class="f" for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required>
+    <p class="err" id="lockerr"></p>
+    <button type="submit">Open</button>
+  </form>
+</div>
 <div class="wrap">
   <header><h1>Frontpage Archive</h1><span class="sub" id="count">Loading</span></header>
   <div class="bar">
@@ -51,6 +86,7 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
     <div class="seg" id="device">
       <button data-v="desktop" aria-pressed="true">Desktop</button>
       <button data-v="mobile" aria-pressed="false">Mobile</button>
+      <button data-v="email" aria-pressed="false">Email</button>
     </div>
     <label class="f" for="pick">Date <input type="date" id="pick"></label>
   </div>
@@ -62,7 +98,7 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
 const DEPTS=[["women","Women"],["men","Men"],["kids","Kids"],["home","Home"],["sport","Sport"],["beauty","Beauty"]];
 const SPORT=[["women","Women"],["men","Men"],["kids","Kids"]];
 const dkey=()=>st.dept==="sport"?"sport-"+st.sub:st.dept;
-const COUNTRIES=[["se","Sweden"],["dk","Denmark"],["no","Norway"],["fi","Finland"],["de","Germany"],["nl","Netherlands"],["at","Austria"],["fr","France"],["pl","Poland"],["ch","Switzerland"],["lt","Lithuania"],["lv","Latvia"],["ee","Estonia"],["is","Iceland"],["fo","Faroe Islands"]];
+const COUNTRIES=[["se","Sweden"],["dk","Denmark"],["no","Norway"],["fi","Finland"],["de","Germany"],["nl","Netherlands"],["at","Austria"],["fr","France"],["pl","Poland"],["ch","Switzerland"],["lt","Lithuania"],["lv","Latvia"],["ee","Estonia"],["is","Iceland"],["fo","Faroe Islands"],["xx","Unknown market"]];
 const st={dept:"women",sub:"women",country:"se",device:"desktop",date:null};
 let rows=[];
 const $=id=>document.getElementById(id);
@@ -79,27 +115,32 @@ function sync(){
   [...$("dept").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.dept));
   [...$("device").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.device));
   [...$("sub").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.sub));
-  $("sub").hidden=st.dept!=="sport";
+  const email=st.device==="email";
+  $("dept").hidden=email;
+  $("sub").hidden=email||st.dept!=="sport";
   render();
 }
-function render(){
-  const list=rows.filter(r=>r.dept===dkey()&&r.cc===st.country&&r.device===st.device).sort((a,b)=>key(b).localeCompare(key(a)));
+function render(picked){
+  const email=st.device==="email";
+  const list=rows.filter(r=>r.cc===st.country&&r.device===st.device&&(email||r.dept===dkey())).sort((a,b)=>key(b).localeCompare(key(a)));
   let cur=null;
-  if(list.length)cur=st.date?(list.find(r=>key(r)===st.date)||list.find(r=>key(r)<=st.date+" 23:59")||list[list.length-1]):list[0];
+  if(picked&&list.includes(picked))cur=picked;
+  else if(list.length)cur=st.date?(list.find(r=>key(r)===st.date)||list.find(r=>key(r)<=st.date+" 23:59")||list[list.length-1]):list[0];
   $("dates").replaceChildren();
-  list.forEach(r=>{const b=document.createElement("button");b.textContent=key(r);b.setAttribute("aria-pressed",r===cur);b.onclick=()=>{st.date=key(r);render()};$("dates").append(b)});
+  // Several emails can share a date and time, so the strip matches on file for emails.
+  list.forEach(r=>{const b=document.createElement("button");b.textContent=key(r)+(email&&r.subject?" · "+r.subject.slice(0,40):"");b.setAttribute("aria-pressed",r===cur);b.onclick=()=>{st.date=key(r);render(r)};$("dates").append(b)});
   if(cur)$("pick").value=cur.date;
   $("stage").replaceChildren();$("meta").replaceChildren();
-  const dl=DEPTS.find(d=>d[0]===st.dept)[1]+(st.dept==="sport"?" "+SPORT.find(s=>s[0]===st.sub)[1]:""),cl=COUNTRIES.find(c=>c[0]===st.country)[1];
+  const dl=email?"Newsletter":DEPTS.find(d=>d[0]===st.dept)[1]+(st.dept==="sport"?" "+SPORT.find(s=>s[0]===st.sub)[1]:""),cl=COUNTRIES.find(c=>c[0]===st.country)[1];
   if(!cur){
     const d=document.createElement("div");d.className="empty";
-    const h=document.createElement("h2");h.textContent="No snapshot for "+dl+" in "+cl;
-    const p=document.createElement("p");p.textContent="Nothing captured yet for this view. The next run is at 08:00 or 16:00 Copenhagen time.";
+    const h=document.createElement("h2");h.textContent="No "+(email?"newsletter":"snapshot")+" for "+dl+" in "+cl;
+    const p=document.createElement("p");p.textContent=email?"No Boozt newsletter has been received for this market yet.":"Nothing captured yet for this view. The next run is at 08:00 or 16:00 Copenhagen time.";
     d.append(h,p);$("stage").append(d);return;
   }
   const img=document.createElement("img");img.className="shot "+st.device;img.loading="lazy";
-  img.alt=dl+" frontpage, "+cl+", "+st.device+", "+key(cur);img.src=cur.file;$("stage").append(img);
-  const l=document.createElement("span");l.textContent="Captured "+key(cur)+" · "+dl+" · "+cl+" · "+st.device;$("meta").append(l);
+  img.alt=dl+", "+cl+", "+key(cur);img.src=cur.file;$("stage").append(img);
+  const l=document.createElement("span");l.textContent=(email?"Received ":"Captured ")+key(cur)+" · "+dl+" · "+cl+(cur.subject?" · "+cur.subject:"");$("meta").append(l);
   if(cur.source){const a=document.createElement("a");a.href=cur.source;a.target="_blank";a.rel="noopener";a.textContent="Open live page";$("meta").append(a)}
 }
 fetch("data/index.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{rows=j;$("count").textContent=rows.length+" snapshots";render()}).catch(()=>{$("count").textContent="No snapshots yet";render()});
