@@ -54,6 +54,8 @@ jobs:
         env:
           FORCE: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
           ONLY: ${{ matrix.cc }}
+          QUALITY: "85"   # JPEG quality 1-100
+          SCALE: "1"      # desktop sharpness, 2 = retina (about 4x file size)
         run: node capture.mjs
       - uses: actions/upload-artifact@v4
         with:
@@ -65,8 +67,33 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
+  emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Newsletters
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          QUALITY: "85"
+        run: node emails.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shots-emails
+          path: |
+            docs/emails
+            docs/data/partial-emails.json
+          if-no-files-found: ignore
+          retention-days: 3
+
   merge:
-    needs: capture
+    needs: [capture, emails]
     if: always()
     runs-on: ubuntu-latest
     steps:
