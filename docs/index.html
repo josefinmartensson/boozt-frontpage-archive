@@ -8,10 +8,10 @@
 <style>
 :root{
   --bg:#f3f1f4; --surface:#ffffff; --fg:#1d1a22; --muted:#6b6573; --line:#dcd7e0;
-  --accent:#5b2a86; --accent-fg:#ffffff; --chip:#e9e4ee; --alt:#0f766e; --alt-chip:#d9f0ec;
+  --accent:#5b2a86; --accent-fg:#ffffff; --chip:#e9e4ee;
   --display:'Fraunces',Georgia,serif; --body:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
 }
-@media (prefers-color-scheme:dark){:root{--bg:#17141b;--surface:#201c27;--fg:#efecf2;--muted:#a29bab;--line:#37313f;--accent:#c9a5ee;--accent-fg:#17141b;--chip:#2c2634;--alt:#5eead4;--alt-chip:#153b37;color-scheme:dark}}
+@media (prefers-color-scheme:dark){:root{--bg:#17141b;--surface:#201c27;--fg:#efecf2;--muted:#a29bab;--line:#37313f;--accent:#c9a5ee;--accent-fg:#17141b;--chip:#2c2634;color-scheme:dark}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 var(--body);padding-inline:16px;padding-block:20px 40px}
@@ -42,13 +42,6 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
 .empty{align-self:center;max-width:46ch;display:flex;flex-direction:column;gap:8px}
 .empty h2{font-family:var(--display);font-size:20px;margin:0}
 .empty p{margin:0;color:var(--muted)}
-.seg button.alt[aria-pressed="false"]{background:var(--alt-chip);color:var(--alt)}
-.seg button.alt[aria-pressed="true"]{background:var(--alt);color:var(--accent-fg)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;width:100%}
-.card{display:flex;flex-direction:column;gap:8px;min-width:0}
-.card h3{margin:0;font:500 13px var(--body);display:flex;justify-content:space-between;gap:8px}
-.card h3 a{color:var(--muted);font:12px var(--mono);text-decoration:none}
-.card img{width:100%;height:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
 .lock[hidden]{display:none}
 .lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
 .lock form{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
@@ -97,7 +90,6 @@ window.addEventListener("DOMContentLoaded", async () => {
       <button data-v="desktop" aria-pressed="true">Desktop</button>
       <button data-v="mobile" aria-pressed="false">Mobile</button>
       <button data-v="email" aria-pressed="false">Email</button>
-      <button data-v="competitors" class="alt" aria-pressed="false">Competitors</button>
     </div>
     <label class="f" for="pick">Date <input type="date" id="pick"></label>
   </div>
@@ -126,15 +118,14 @@ function sync(){
   [...$("dept").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.dept));
   [...$("device").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.device));
   [...$("sub").querySelectorAll("button")].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.sub));
-  const email=st.device==="email",comp=st.device==="competitors";
-  $("dept").hidden=email||comp;
-  $("sub").hidden=email||comp||st.dept!=="sport";
+  const email=st.device==="email";
+  $("dept").hidden=email;
+  $("sub").hidden=email||st.dept!=="sport";
   render();
 }
 function render(picked){
-  if(st.device==="competitors")return renderCompetitors();
   const email=st.device==="email";
-  const list=rows.filter(r=>r.cc===st.country&&r.device===st.device&&(email||r.dept===dkey())).sort((a,b)=>key(b).localeCompare(key(a)));
+  const list=rows.filter(r=>r.dept!=="competitor"&&r.cc===st.country&&r.device===st.device&&(email||r.dept===dkey())).sort((a,b)=>key(b).localeCompare(key(a)));
   let cur=null;
   if(picked&&list.includes(picked))cur=picked;
   else if(list.length)cur=st.date?(list.find(r=>key(r)===st.date)||list.find(r=>key(r)<=st.date+" 23:59")||list[list.length-1]):list[0];
@@ -155,35 +146,7 @@ function render(picked){
   const l=document.createElement("span");l.textContent=(email?"Received ":"Captured ")+key(cur)+" · "+dl+" · "+cl+(cur.subject?" · "+cur.subject:"");$("meta").append(l);
   if(cur.source){const a=document.createElement("a");a.href=cur.source;a.target="_blank";a.rel="noopener";a.textContent="Open live page";$("meta").append(a)}
 }
-function renderCompetitors(){
-  const all=rows.filter(r=>r.dept==="competitor"&&r.cc===st.country);
-  const slots=[...new Set(all.map(key))].sort().reverse();
-  let slot=null;
-  if(slots.length)slot=st.date?(slots.find(s=>s===st.date)||slots.find(s=>s<=st.date+" 23:59")||slots[slots.length-1]):slots[0];
-  $("dates").replaceChildren();
-  slots.forEach(s=>{const b=document.createElement("button");b.textContent=s;b.setAttribute("aria-pressed",s===slot);b.onclick=()=>{st.date=s;render()};$("dates").append(b)});
-  if(slot)$("pick").value=slot.slice(0,10);
-  $("stage").replaceChildren();$("meta").replaceChildren();
-  const cl=COUNTRIES.find(c=>c[0]===st.country)[1];
-  if(!slot){
-    const d=document.createElement("div");d.className="empty";
-    const h=document.createElement("h2");h.textContent="No competitor snapshots for "+cl;
-    const p=document.createElement("p");p.textContent="Add competitors for this market in competitors.json. They are captured on mobile at the same times as Boozt.";
-    d.append(h,p);$("stage").append(d);return;
-  }
-  const list=all.filter(r=>key(r)===slot).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-  const g=document.createElement("div");g.className="grid";
-  list.forEach(r=>{
-    const c=document.createElement("div");c.className="card";
-    const h=document.createElement("h3");h.textContent=r.name||"";
-    if(r.source){const a=document.createElement("a");a.href=r.source;a.target="_blank";a.rel="noopener";a.textContent="open";h.append(a)}
-    const img=document.createElement("img");img.loading="lazy";img.src=r.file;img.alt=(r.name||"")+", "+cl+", "+slot;
-    c.append(h,img);g.append(c);
-  });
-  $("stage").append(g);
-  const l=document.createElement("span");l.textContent="Captured "+slot+" · "+list.length+" competitors · "+cl+" · mobile";$("meta").append(l);
-}
-fetch("data/index.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{rows=j;$("count").textContent=rows.length+" snapshots";render()}).catch(()=>{$("count").textContent="No snapshots yet";render()});
+fetch("data/index.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{rows=j.filter(r=>r.dept!=="competitor");$("count").textContent=rows.length+" snapshots";render()}).catch(()=>{$("count").textContent="No snapshots yet";render()});
 </script>
 </body>
 </html>
