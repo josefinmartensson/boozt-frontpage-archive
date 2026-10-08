@@ -13,13 +13,15 @@
 }
 @media (prefers-color-scheme:dark){:root{--bg:#17141b;--surface:#201c27;--fg:#efecf2;--muted:#a29bab;--line:#37313f;--accent:#c9a5ee;--accent-fg:#17141b;--chip:#2c2634;color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 var(--body);padding-inline:16px;padding-block:20px 40px}
 .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
 h1{font-family:var(--display);font-size:28px;margin:0}
 .sub{color:var(--muted);font:12px var(--mono)}
 .bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.seg .lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
 button,select,input{font:inherit;color:var(--fg)}
 .seg button{border:0;background:transparent;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:500}
 .seg button:hover{background:var(--chip)}
@@ -82,7 +84,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   <header><h1>Frontpage Archive</h1><span class="sub" id="count">Loading</span></header>
   <div class="bar">
     <div class="seg" id="dept"></div>
-    <div class="seg" id="sub" hidden></div>
+    <div class="seg" id="sub" hidden><span class="lbl">Sport for</span></div>
     <label class="f" for="country">Country <select id="country"></select></label>
     <div class="seg" id="device">
       <button data-v="desktop" aria-pressed="true">Desktop</button>
@@ -115,7 +117,7 @@ $("pick").onchange=e=>{st.date=e.target.value||null;render()};
 function sync(){
   [...$("dept").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.dept));
   [...$("device").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.device));
-  [...$("sub").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.sub));
+  [...$("sub").querySelectorAll("button")].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.sub));
   const email=st.device==="email";
   $("dept").hidden=email;
   $("sub").hidden=email||st.dept!=="sport";
