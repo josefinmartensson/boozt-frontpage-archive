@@ -1,1 +1,10 @@
-{}
+{
+  "is": {
+    "women": "https://www.boozt.com/is/is/women",
+    "men": "https://www.boozt.com/is/is/menswear",
+    "kids": "https://www.boozt.com/is/is/born",
+    "home": "https://www.boozt.com/is/is/snyrtivorur",
+    "sport-women": "https://www.boozt.com/is/is/women/sport/view-all",
+    "sport-men": "https://www.boozt.com/is/is/menswear/sport/view-all"
+  }
+}
