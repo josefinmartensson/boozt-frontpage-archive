@@ -49,6 +49,29 @@ select,input[type=date]{background:var(--surface);border:1px solid var(--line);b
 .card h3{margin:0;font:500 13px var(--body);display:flex;justify-content:space-between;gap:8px}
 .card h3 a{color:var(--muted);font:12px var(--mono);text-decoration:none}
 .card img{width:100%;height:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;width:100%}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px}
+.stat .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-size:24px;font-weight:500;font-variant-numeric:tabular-nums}
+.mail{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;width:100%;align-items:start}
+@media (max-width:760px){.mail{grid-template-columns:1fr}}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+.day{display:flex;justify-content:space-between;padding:10px 14px;background:var(--chip);font-weight:500;border-top:1px solid var(--line)}
+.day:first-child{border-top:0}
+.day span{color:var(--muted);font-weight:400}
+.row{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 14px;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer;font:13px var(--body);color:var(--fg)}
+.row:hover{background:var(--chip)}
+.row[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.row .t{font-family:var(--mono);font-size:12px;flex:none}
+.row .s{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .b{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--chip);color:var(--muted);flex:none}
+.row[aria-pressed="true"] .b{background:var(--surface);color:var(--fg)}
+.more{width:100%;padding:10px;border:0;border-top:1px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer;font:13px var(--body)}
+.preview{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;position:sticky;top:12px}
+.preview h3{margin:0 0 4px;font:500 14px var(--body)}
+.preview .m{color:var(--muted);font:12px var(--mono);margin-bottom:10px}
+.preview img{width:100%;height:auto;border:1px solid var(--line);border-radius:6px;display:block}
+.preview a{display:inline-block;margin-top:8px;color:var(--accent);font-size:13px}
 .lock[hidden]{display:none}
 .lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
 .lock form{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
@@ -112,6 +135,7 @@ const SPORT=[["women","Women"],["men","Men"],["kids","Kids"]];
 const dkey=()=>st.dept==="sport"?"sport-"+st.sub:st.dept;
 const COUNTRIES=[["se","Sweden"],["dk","Denmark"],["no","Norway"],["fi","Finland"],["de","Germany"],["nl","Netherlands"],["at","Austria"],["fr","France"],["pl","Poland"],["ch","Switzerland"],["lt","Lithuania"],["lv","Latvia"],["ee","Estonia"],["is","Iceland"],["fo","Faroe Islands"],["xx","Unknown market"]];
 const st={dept:"women",sub:"women",brand:"boozt",country:"se",device:"desktop",date:null};
+let mailSel=null,mailDays=14;
 const brandOf=r=>r.brand||(/booztlet/i.test((r.from||"")+" "+(r.subject||""))?"booztlet":"boozt");
 let rows=[];
 const $=id=>document.getElementById(id);
@@ -120,10 +144,10 @@ DEPTS.forEach(([k,l])=>{const b=document.createElement("button");b.textContent=l
 COUNTRIES.forEach(([k,l])=>{const o=document.createElement("option");o.value=k;o.textContent=l+" ("+k.toUpperCase()+")";$("country").append(o)});
 SPORT.forEach(([k,l])=>{const b=document.createElement("button");b.textContent=l;b.dataset.v=k;b.setAttribute("aria-pressed",k===st.sub);$("sub").append(b)});
 $("dept").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.dept=b.dataset.v;st.date=null;sync()};
-$("brand").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.brand=b.dataset.v;st.date=null;sync()};
+$("brand").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.brand=b.dataset.v;st.date=null;mailSel=null;mailDays=14;sync()};
 $("sub").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.sub=b.dataset.v;st.date=null;sync()};
 $("device").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.device=b.dataset.v;st.date=null;sync()};
-$("country").onchange=e=>{st.country=e.target.value;st.date=null;render()};
+$("country").onchange=e=>{st.country=e.target.value;st.date=null;mailSel=null;mailDays=14;render()};
 $("pick").onchange=e=>{st.date=e.target.value||null;render()};
 function sync(){
   [...$("dept").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.dept));
@@ -138,11 +162,13 @@ function sync(){
 }
 function render(picked){
   if(st.device==="competitors")return renderCompetitors();
-  const email=st.device==="email";
+  if(st.device==="email")return renderEmails();
+  const email=false;
   const list=rows.filter(r=>r.cc===st.country&&r.device===st.device&&(email?brandOf(r)===st.brand:r.dept===dkey())).sort((a,b)=>key(b).localeCompare(key(a)));
   let cur=null;
   if(picked&&list.includes(picked))cur=picked;
   else if(list.length)cur=st.date?(list.find(r=>key(r)===st.date)||list.find(r=>key(r)<=st.date+" 23:59")||list[list.length-1]):list[0];
+  $("stage").style.cssText="";
   $("dates").replaceChildren();
   // Several emails can share a date and time, so the strip matches on file for emails.
   list.forEach(r=>{const b=document.createElement("button");b.textContent=key(r)+(email&&r.subject?" · "+r.subject.slice(0,40):"");b.setAttribute("aria-pressed",r===cur);b.onclick=()=>{st.date=key(r);render(r)};$("dates").append(b)});
@@ -160,11 +186,63 @@ function render(picked){
   const l=document.createElement("span");l.textContent=(email?"Received ":"Captured ")+key(cur)+" · "+dl+" · "+cl+(cur.subject?" · "+cur.subject:"");$("meta").append(l);
   if(cur.source){const a=document.createElement("a");a.href=cur.source;a.target="_blank";a.rel="noopener";a.textContent="Open live page";$("meta").append(a)}
 }
+function renderEmails(){
+  const cl=COUNTRIES.find(c=>c[0]===st.country)[1],bl=st.brand==="booztlet"?"Booztlet":"Boozt";
+  const all=rows.filter(r=>r.device==="email"&&r.cc===st.country&&brandOf(r)===st.brand).sort((a,b)=>key(b).localeCompare(key(a)));
+  $("dates").replaceChildren();$("stage").replaceChildren();$("meta").replaceChildren();
+  $("stage").style.cssText="";
+  if(!all.length){
+    const d=document.createElement("div");d.className="empty";
+    const h=document.createElement("h2");h.textContent="No "+bl+" newsletters for "+cl;
+    const p=document.createElement("p");p.textContent="Nothing received for this market yet. Newsletters are collected at 08:00 and 16:00 Copenhagen time.";
+    d.append(h,p);$("stage").append(d);return;
+  }
+  // days: from today back to the oldest email, filled with empty days
+  const today=new Date();const iso=d=>d.toISOString().slice(0,10);
+  const oldest=all[all.length-1].date;const days=[];
+  for(let i=0;;i++){const d=new Date(today.getTime()-i*864e5);const s=iso(d);days.push(s);if(s<=oldest||i>365)break;}
+  const byDay=new Map();all.forEach(r=>{(byDay.get(r.date)||byDay.set(r.date,[]).get(r.date)).push(r)});
+  // stats
+  const last7=all.filter(r=>r.date>=iso(new Date(today.getTime()-6*864e5))).length;
+  const span=Math.max(1,Math.min(days.length,30));const last30=all.filter(r=>r.date>=iso(new Date(today.getTime()-(span-1)*864e5))).length;
+  const mins=all.map(r=>{const [hh,mm]=r.time.split(":").map(Number);return hh*60+mm});mins.sort((a,b)=>a-b);
+  const med=mins.length?mins[Math.floor(mins.length/2)]:null;const usual=med==null?"–":String(Math.floor(med/60)).padStart(2,"0")+":"+String(med%60).padStart(2,"0");
+  const lastD=all[0].date===iso(today)?"Today":all[0].date===iso(new Date(today.getTime()-864e5))?"Yesterday":all[0].date;
+  const stats=document.createElement("div");stats.className="stats";
+  [["Last 7 days",last7],["Per day ("+span+"d)",(last30/span).toFixed(1)],["Usual send time",usual],["Last received",lastD]].forEach(([k,v])=>{const s=document.createElement("div");s.className="stat";const a=document.createElement("div");a.className="k";a.textContent=k;const b=document.createElement("div");b.className="v";b.textContent=v;s.append(a,b);stats.append(s)});
+  // list
+  if(!mailSel||!all.includes(mailSel))mailSel=all[0];
+  const wrap=document.createElement("div");wrap.className="mail";
+  const list=document.createElement("div");list.className="list";
+  const fmt=s=>new Date(s+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+  days.slice(0,mailDays).forEach(s=>{
+    const items=byDay.get(s)||[];
+    const d=document.createElement("div");d.className="day";d.textContent=fmt(s);const c=document.createElement("span");c.textContent=items.length+(items.length===1?" email":" emails");d.append(c);list.append(d);
+    items.forEach(r=>{
+      const b=document.createElement("button");b.className="row";b.setAttribute("aria-pressed",r===mailSel);
+      const t=document.createElement("span");t.className="t";t.textContent=r.time;
+      const su=document.createElement("span");su.className="s";su.textContent=r.subject||"(no subject)";
+      const br=document.createElement("span");br.className="b";br.textContent=brandOf(r)==="booztlet"?"Booztlet":"Boozt";
+      b.append(t,su,br);b.onclick=()=>{mailSel=r;renderEmails()};list.append(b);
+    });
+  });
+  if(days.length>mailDays){const m=document.createElement("button");m.className="more";m.textContent="Show "+Math.min(14,days.length-mailDays)+" more days";m.onclick=()=>{mailDays+=14;renderEmails()};list.append(m)}
+  const pv=document.createElement("div");pv.className="preview";
+  const h3=document.createElement("h3");h3.textContent=mailSel.subject||"(no subject)";
+  const m=document.createElement("div");m.className="m";m.textContent=fmt(mailSel.date)+" "+mailSel.time+" · "+bl+" · "+st.country.toUpperCase();
+  const img=document.createElement("img");img.src=mailSel.file;img.alt=mailSel.subject||"Newsletter";
+  const a=document.createElement("a");a.href=mailSel.file;a.target="_blank";a.rel="noopener";a.textContent="Open full size";
+  pv.append(h3,m,img,a);
+  wrap.append(list,pv);
+  $("stage").append(stats,wrap);
+  $("stage").style.display="flex";$("stage").style.flexDirection="column";$("stage").style.gap="16px";
+}
 function renderCompetitors(){
   const all=rows.filter(r=>r.dept==="competitor"&&r.cc===st.country);
   const slots=[...new Set(all.map(key))].sort().reverse();
   let slot=null;
   if(slots.length)slot=st.date?(slots.find(s=>s===st.date)||slots.find(s=>s<=st.date+" 23:59")||slots[slots.length-1]):slots[0];
+  $("stage").style.cssText="";
   $("dates").replaceChildren();
   slots.forEach(s=>{const b=document.createElement("button");b.textContent=s;b.setAttribute("aria-pressed",s===slot);b.onclick=()=>{st.date=s;render()};$("dates").append(b)});
   if(slot)$("pick").value=slot.slice(0,10);
