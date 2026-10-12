@@ -48,6 +48,8 @@ try {
       if (!/boozt/.test(from)) { continue; } // leave non-Boozt mail unread and untouched
       const html = parsed.html || `<pre style="font:14px sans-serif;white-space:pre-wrap">${(parsed.text || "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]))}</pre>`;
       const cc = marketOf(parsed, html);
+      // Booztlet sends from its own domain; fall back to the subject and the first links in the body.
+      const brand = /booztlet/i.test(from) || /booztlet/i.test(parsed.subject || "") || /booztlet\.com/i.test(html.slice(0, 20000)) ? "booztlet" : "boozt";
       const { date, time } = cph(parsed.date || new Date());
       const dir = path.join(DOCS, "emails", date);
       await fs.mkdir(dir, { recursive: true });
@@ -59,7 +61,7 @@ try {
         await page.waitForTimeout(2500);
         await page.screenshot({ path: path.join(dir, file), type: "jpeg", quality: QUALITY, fullPage: true });
       } finally { await ctx.close(); }
-      results.push({ date, time, cc, dept: "newsletter", device: "email", file: `emails/${date}/${file}`, subject: parsed.subject || "", from });
+      results.push({ date, time, cc, dept: "newsletter", device: "email", brand, file: `emails/${date}/${file}`, subject: parsed.subject || "", from });
       await client.messageFlagsAdd(uid, ["\\Seen"], { uid: true });
     } catch (e) { failures.push(`uid ${uid}: ${e.message}`); }
   }
