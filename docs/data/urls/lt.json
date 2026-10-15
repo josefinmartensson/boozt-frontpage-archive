@@ -1,1 +1,9 @@
-{}
+{
+  "lt": {
+    "women": "https://www.boozt.com/lt/lt/moterims",
+    "men": "https://www.boozt.com/lt/lt/vyrams",
+    "kids": "https://www.boozt.com/lt/lt/vaikams",
+    "home": "https://www.boozt.com/lt/lt/grozio-prekes",
+    "sport-men": "https://www.boozt.com/lt/lt/sport/sporto-prekes-moterims"
+  }
+}
